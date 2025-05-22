@@ -31,7 +31,7 @@ const ResponseItem = (props) => {
 function getItem(item, response) {
   return (
     <div className="block bg-white rounded-md p-4 w-full mb-8">
-      {getFileName(item.document.structData.title)}
+      {getFileName(item.document.derivedStructData.title)}
       {getReferences(
         response.summary.summaryWithMetadata.references[0].chunkContents
       )}

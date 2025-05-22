@@ -3,3 +3,5 @@ google-cloud-storage
 fastapi
 coloredlogs
 python-multipart
+uvicorn
+python-dotenv

@@ -5,19 +5,26 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: #f3f4f6; /* Tailwind gray-100 for overall page bg */
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
     monospace;
 }
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-/* src/index.css */
+
+/* Custom spinner color */
 .loader {
-  border-top-color: #3498db;
+  border-top-color: #008937; /* ayala-green-DEFAULT */
   animation: spin 1s linear infinite;
+  /* Optional: adjust other loader border colors for a different look */
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+  border-left-color: #008937; /* or transparent */
 }
 
 @keyframes spin {
@@ -27,4 +34,18 @@ code {
   100% {
     transform: rotate(360deg);
   }
+}
+
+/* Custom prose overrides for content parsed from HTML */
+.prose {
+  --tw-prose-body: theme(colors.text-secondary);
+  --tw-prose-headings: theme(colors.text-primary);
+  --tw-prose-lead: theme(colors.text-secondary);
+  --tw-prose-links: theme(colors.ayala-green.DEFAULT);
+  --tw-prose-bold: theme(colors.text-primary);
+  /* Add more overrides if needed, e.g., for lists, blockquotes */
+}
+
+.prose code::before, .prose code::after {
+  content: none; /* Disables backticks around inline code in prose if desired */
 }

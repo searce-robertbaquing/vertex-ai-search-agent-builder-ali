@@ -1,169 +1,139 @@
 import parse from "html-react-parser";
+import { FaRegFilePdf, FaBookOpen, FaLightbulb, FaQuoteLeft, FaChartLine, FaInfoCircle } from 'react-icons/fa';
 
-/**
- * Renders a single response item from the search results.
- *
- * @param {object} props The props object containing the response data.
- * @param {object} props.response The search response object.
- * @returns {JSX.Element} The JSX element representing the response item.
- */
 const ResponseItem = (props) => {
-  console.log("API pass as props", props.response);
-  return (
-    <div className="bg-gray rounded-md p-4 w-full mb-8">
-      <div className="flex-col overflow-y-auto items-center justify-center">
-        {props.response.results &&
-          props.response.results.map((item) => {
-            return getItem(item, props.response);
-          })}
+  const isLoading = props.response?.isLoading;
+
+  if (isLoading) {
+    // Handled by the modal in ParameterPanel, but could have a placeholder here too
+    return null; 
+  }
+  
+  if (!props.response || !props.response.results) {
+    return (
+      <div className="bg-card-bg rounded-lg shadow-md p-8 text-center text-text-muted">
+        <FaInfoCircle className="mx-auto text-4xl text-gray-400 mb-4" />
+        <p>Perform a search to see results here.</p>
+        <p className="text-xs mt-1">Ensure you have entered a query in the search bar above and clicked "Search" in the parameters panel.</p>
       </div>
+    );
+  }
+
+  if (props.response.results.length === 0) {
+    return (
+      <div className="bg-card-bg rounded-lg shadow-md p-8 text-center text-text-muted">
+        <FaInfoCircle className="mx-auto text-4xl text-gray-400 mb-4" />
+        <p>No results found for your query.</p>
+        <p className="text-xs mt-1">Try refining your search terms or adjusting the parameters.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {props.response.results.map((item, index) => (
+        <div key={item.document?.id || `result-${index}`} className="bg-card-bg rounded-lg shadow-md p-6">
+          {getFileName(item.document?.derivedStructData?.title)}
+          {getReferences(props.response.summary?.summaryWithMetadata?.references)}
+          {getSnippets(item.document?.derivedStructData?.snippets)}
+          {getExtractiveAnswer(item.document?.derivedStructData?.extractive_answers)}
+          {getExtractiveSegments(item.document?.derivedStructData?.extractive_segments)}
+        </div>
+      ))}
     </div>
   );
 };
 
-/**
- * Renders a single item from the search results.
- *
- * @param {object} item The search result item.
- * @param {object} response The search response object.
- * @returns {JSX.Element} The JSX element representing the item.
- */
-function getItem(item, response) {
-  return (
-    <div className="block bg-white rounded-md p-4 w-full mb-8">
-      {getFileName(item.document.derivedStructData.title)}
-      {getReferences(
-        response.summary.summaryWithMetadata.references[0].chunkContents
-      )}
-      {getSnippets(item.document.derivedStructData.snippets)}
-      {getExtractiveAnswer(item.document.derivedStructData.extractive_answers)}
-      {getExtractiveSegments(
-        item.document.derivedStructData.extractive_segments
-      )}
-    </div>
-  );
-}
-
-/**
- * Renders the file name from the document title.
- *
- * @param {string} docTitle The document title.
- * @returns {JSX.Element} The JSX element representing the file name.
- */
 function getFileName(docTitle) {
+  if (!docTitle) return null;
+  const title = docTitle.toString().includes("docs/")
+    ? docTitle.toString().split("/")[1]
+    : docTitle.toString();
   return (
-    <h3 className="text-md font-medium mb-2 text-sky-900">
-      from:{" "}
-      {docTitle.toString().includes("docs/")
-        ? docTitle.toString().split("/")[1]
-        : docTitle.toString()}
+    <h3 className="text-xl font-semibold text-ayala-green-dark mb-3 flex items-center">
+      <FaRegFilePdf className="mr-2 opacity-80 flex-shrink-0"/> {title}
     </h3>
   );
 }
 
-/**
- * Renders the references from the search response.
- *
- * @param {array} referenceItems The array of reference items.
- * @returns {JSX.Element} The JSX element representing the references.
- */
 function getReferences(referenceItems) {
+  if (!referenceItems || referenceItems.length === 0) return null;
   return (
-    <div className="block mt-2 mb-2">
-      <h1 className="text-md font-bold">References</h1>
-      <div className="block ">
-        {referenceItems &&
-          referenceItems.map((item) => {
-            return (
-              <div className="block mb-2">
-                <h1 className="text-xs font-medium text-violet-900">
-                  page {item.pageIdentifier}
-                </h1>
-                <h1 className="text-sm">{item.content}</h1>
-              </div>
-            );
-          })}
+    <div className="mt-5 pt-4 border-t border-gray-200">
+      <h4 className="text-xs font-semibold text-text-muted mb-2 uppercase tracking-wider flex items-center">
+        <FaBookOpen className="mr-2 opacity-75"/> References
+      </h4>
+      <div className="space-y-2">
+        {referenceItems.map((item, index) => (
+          <div key={`ref-${index}`} className="text-xs text-text-secondary bg-page-bg p-2 rounded-md">
+            <span className="font-semibold text-ayala-green">Page {item.chunkContents?.[0]?.pageIdentifier || 'N/A'}:</span> {item.chunkContents?.[0]?.content || 'No content available.'}
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-/**
- * Renders the snippets from the search response.
- *
- * @param {array} snippetItems The array of snippet items.
- * @returns {JSX.Element} The JSX element representing the snippets.
- */
 function getSnippets(snippetItems) {
+  if (!snippetItems || snippetItems.length === 0) return null;
   return (
-    <div className="block mt-2 mb-2">
-      <h1 className="text-md font-bold">Snippets</h1>
-      {snippetItems &&
-        snippetItems.map((item) => {
-          return (
-            <div className="block mb-2">
-              <h1 className="text-sm prose">{parse(item.snippet)}</h1>
-            </div>
-          );
-        })}
-    </div>
-  );
-}
-
-/**
- * Renders the extractive answers from the search response.
- *
- * @param {array} extractiveAnswerItems The array of extractive answer items.
- * @returns {JSX.Element} The JSX element representing the extractive answers.
- */
-function getExtractiveAnswer(extractiveAnswerItems) {
-  return (
-    <div className="block mt-2 mb-2">
-      <h1 className="text-md font-bold">Extractive Answers</h1>
-      <div className="block mb-2">
-        {extractiveAnswerItems &&
-          extractiveAnswerItems.map((item) => {
-            return (
-              <div className="block">
-                <h1 className="text-xs font-medium text-orange-700">
-                  page {item.pageNumber}
-                </h1>
-                <h1 className="text-sm">{item.content}</h1>
-              </div>
-            );
-          })}
+    <div className="mt-5 pt-4 border-t border-gray-200">
+      <h4 className="text-xs font-semibold text-text-muted mb-2 uppercase tracking-wider flex items-center">
+         <FaLightbulb className="mr-2 opacity-75"/> Snippets
+      </h4>
+      <div className="space-y-3">
+        {snippetItems.map((item, index) => (
+          <div key={`snippet-${index}`} className="text-sm text-text-secondary leading-relaxed prose prose-sm max-w-none prose-p:my-1 prose-a:text-ayala-green hover:prose-a:text-ayala-green-dark">
+            {parse(item.snippet)}
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-/**
- * Renders the extractive segments from the search response.
- *
- * @param {array} extractiveSegmentItems The array of extractive segment items.
- * @returns {JSX.Element} The JSX element representing the extractive segments.
- */
-function getExtractiveSegments(extractiveSegmentItems) {
+function getExtractiveAnswer(extractiveAnswerItems) {
+  if (!extractiveAnswerItems || extractiveAnswerItems.length === 0) return null;
   return (
-    <div className="block mt-2 mb-2">
-      <h1 className="text-md font-bold">Extractive Segments</h1>
-      <div className="block mb-2">
-        {extractiveSegmentItems &&
-          extractiveSegmentItems.map((item) => {
-            return (
-              <div className="block mb-2">
-                <div className="flex justify-between">
-                  <h1 className="text-xs font-medium text-orange-700">
-                    page {item.pageNumber}
-                  </h1>
-                  <h1 className="text-xs font-medium text-green-800">
-                    relevance score: {item.relevanceScore.toFixed(2)}
-                  </h1>
-                </div>
-                <h1 className="text-sm">{item.content}</h1>
-              </div>
-            );
-          })}
+    <div className="mt-5 pt-4 border-t border-gray-200">
+      <h4 className="text-xs font-semibold text-text-muted mb-2 uppercase tracking-wider flex items-center">
+        <FaQuoteLeft className="mr-2 opacity-75"/> Extractive Answers
+      </h4>
+      <div className="space-y-3">
+        {extractiveAnswerItems.map((item, index) => (
+          <div key={`answer-${index}`} className="bg-ayala-green-light/10 p-4 rounded-lg border-l-4 border-ayala-green-light">
+            <p className="text-xs text-ayala-green-dark font-medium mb-1">Page {item.pageNumber}</p>
+            <p className="text-sm text-text-primary">{item.content}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function getExtractiveSegments(extractiveSegmentItems) {
+  if (!extractiveSegmentItems || extractiveSegmentItems.length === 0) return null;
+  return (
+    <div className="mt-5 pt-4 border-t border-gray-200">
+      <h4 className="text-xs font-semibold text-text-muted mb-2 uppercase tracking-wider flex items-center">
+        <FaChartLine className="mr-2 opacity-75"/> Extractive Segments
+      </h4>
+      <div className="space-y-3">
+        {extractiveSegmentItems.map((item, index) => (
+          <div key={`segment-${index}`} className="bg-gray-50 p-4 rounded-lg">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-xs font-medium text-ayala-green-dark">
+                Page {item.pageNumber}
+              </span>
+              {item.relevanceScore && (
+                <span className="text-xs font-medium text-ayala-green bg-ayala-green-light/20 px-2 py-0.5 rounded-full">
+                  Relevance: {item.relevanceScore.toFixed(2)}
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-text-secondary">{item.content}</p>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -1,30 +1,22 @@
-import React, { useState } from "react"; // Added useState
-import "./App.css";
+import React, { useState } from "react";
+// No longer importing App.css as styles are in index.css or Tailwind
 import SearchComponent from "./components/SearchComponent";
 import ResponseItem from "./components/SearchResponseList";
 import ParameterPanel from "./components/ParameterPanel";
 import { SearchProvider, SearchContext } from "./context/SearchContext";
-import { FaPaperclip, FaTrash } from 'react-icons/fa'; // Added FaPaperclip, FaTrash
-import axios from 'axios'; // Added axios
+import { FaPaperclip, FaTrash, FaSpinner } from 'react-icons/fa';
+import axios from 'axios';
 
-/**
- * The main application component.
- *
- * Renders the search bar, summary, and search results.
- *
- * @returns {JSX.Element} The JSX element representing the application.
- */
 function App() {
-  // State for file upload functionality
   const [file, setFile] = useState(null);
   const [fileName, setFileName] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleFileChange = (event) => {
     const selectedFile = event.target.files[0];
     if (selectedFile) {
       setFile(selectedFile);
       setFileName(selectedFile.name);
-      console.log('Selected file:', selectedFile.name);
     }
   };
 
@@ -33,114 +25,153 @@ function App() {
       alert('Please select a file to upload first.');
       return;
     }
-
+    setIsUploading(true);
     const formData = new FormData();
     formData.append('file', file);
 
     try {
-      // Ensure this URL matches your backend's upload endpoint
       const response = await axios.post('http://34.93.181.110:8000/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      console.log('File upload successful:', response.data);
+      console.log('File upload successful:', response.data); 
       alert('File uploaded successfully!');
-      // Clear the file input and name after successful upload
       setFile(null);
       setFileName('');
-      // Optionally, refresh search results or trigger datastore import here
     } catch (error) {
       console.error('Error uploading file:', error);
       alert(`Error uploading file: ${error.response ? error.response.data.detail : error.message}`);
+    } finally {
+      setIsUploading(false);
     }
   };
 
   return (
     <SearchProvider>
-      <div className="bg-gradient-to-r from-sky-500 to-indigo-500 min-h-screen flex flex-col items-center">
-        <div className="w-full px-4 pt-16">
-          <h1 className="text-2xl font-bold text-center text-white mb-6">
-            Vertex AI Search Engine Demo
-          </h1>
-          <div className="flex w-full items-start justify-start mb-8 ml-4">
-            <SearchComponent />
-          </div>
+      <div className="min-h-screen bg-page-bg text-text-secondary">
+        {/* Header */}
+        <header className="bg-header-bg shadow-md sticky top-0 z-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              {/* Left part: Logo */}
+              <div className="flex-shrink-0">
+                <img
+                  src="/logo.png" 
+                  alt="Ayala Land Logo"
+                  className="h-10 w-auto" 
+                />
+              </div>
 
-          <div className="bg-white rounded-md p-4 w-full mb-8">
+              {/* Center part: Title */}
+              <div className="flex-grow text-center">
+                <h1 className="text-2xl font-semibold text-ayala-green-dark">
+                  AyalaLand Compass: Self Service AI Search
+                </h1>
+              </div>
+
+              {/* Right part: Spacer to balance the logo for title centering */}
+              <div className="flex-shrink-0" style={{ width: 'calc(2.5rem + 1rem)' }}>
+                {/* This space can be used for other icons/menu in the future */}
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Main Content Area */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* File Upload Section */}
+          <section className="mb-8 p-6 bg-card-bg rounded-lg shadow-md">
+            <h2 className="text-xl font-semibold text-ayala-green-dark mb-4">Upload Knowledge Base File</h2>
+            <div className="flex items-center space-x-3">
+              <label htmlFor="file-upload" className="inline-flex items-center px-4 py-2 bg-gray-100 text-text-secondary text-sm font-medium rounded-md border border-gray-300 cursor-pointer hover:bg-gray-200 transition-colors">
+                <FaPaperclip size={18} className="mr-2 -ml-1 text-text-muted" />
+                <span>{fileName ? "Change file" : "Select PDF file"}</span>
+              </label>
+              <input
+                type="file"
+                id="file-upload"
+                className="hidden"
+                onChange={handleFileChange}
+                accept=".pdf"
+                disabled={isUploading}
+              />
+
+              {fileName && (
+                <div className="flex items-center text-sm bg-gray-100 p-2 rounded-md flex-grow min-w-0">
+                  <span className="text-text-secondary truncate" title={fileName}>{fileName}</span>
+                  <button
+                    type="button"
+                    onClick={() => { if (!isUploading) {setFile(null); setFileName('');} }}
+                    className="ml-2 text-red-500 hover:text-red-700 disabled:opacity-50"
+                    disabled={isUploading}
+                    aria-label="Remove file"
+                  >
+                    <FaTrash size={16} />
+                  </button>
+                </div>
+              )}
+
+              {file && (
+                <button
+                  type="button"
+                  onClick={handleFileUpload}
+                  disabled={isUploading}
+                  className="inline-flex items-center justify-center px-6 py-2 bg-ayala-green-dark text-white text-sm font-semibold rounded-md shadow-sm hover:bg-ayala-green focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ayala-green-DEFAULT disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {isUploading ? (
+                    <>
+                      <FaSpinner className="animate-spin -ml-1 mr-2 h-5 w-5" />
+                      Uploading...
+                    </>
+                  ) : (
+                    "Upload"
+                  )}
+                </button>
+              )}
+            </div>
+            { !fileName && !isUploading && <p className="text-xs text-text-muted mt-2">Select a PDF file to upload to the knowledge base.</p>}
+          </section>
+
+          <section className="mb-8">
+            <SearchComponent />
+          </section>
+
+          <section className="mb-8 p-6 bg-card-bg rounded-lg shadow-md">
             <div className="flex items-start">
               <img
-                src="/google-gemini-icon.png"
-                alt="gemini"
-                className="w-6 h-6 mr-4"
+                src="/google-gemini-icon.png" 
+                alt="AI Summary Icon"
+                className="w-8 h-8 mr-4 text-ayala-green"
               />
-              <div className="block">
-                <p className="text-xs">Summary</p>
+              <div>
+                <h2 className="text-lg font-semibold text-ayala-green-dark mb-1">Summary</h2>
                 <SearchContext.Consumer>
                   {({ searchResults }) => (
-                    <h1 className="text-xl font-medium text-start mb-6">
+                    <p className="text-text-secondary leading-relaxed">
                       {searchResults && searchResults.summary
                         ? searchResults.summary.summaryText
-                        : "Summary will appear here for your answers"}
-                    </h1>
+                        : "Your answer summary will appear here after a search."}
+                    </p>
                   )}
                 </SearchContext.Consumer>
               </div>
             </div>
-          </div>
-          <div className="flex items-baseline">
-            <ParameterPanel />
-            <SearchContext.Consumer>
-              {({ searchResults }) => (
-                <div className="flex w-3/4 flex-col space-y-4 overflow-y-auto">
+          </section>
+
+          <section className="flex flex-col md:flex-row md:space-x-8">
+            <div className="w-full md:w-1/3 lg:w-1/4 mb-8 md:mb-0">
+              <ParameterPanel />
+            </div>
+            <div className="w-full md:w-2/3 lg:w-3/4">
+              <SearchContext.Consumer>
+                {({ searchResults }) => (
                   <ResponseItem response={searchResults} />
-                </div>
-              )}
-            </SearchContext.Consumer>
-          </div>
-
-          {/* File Upload Section - Added here */}
-          <div className="p-4 bg-white border-t border-gray-200 flex items-center space-x-2 mt-8">
-            {/* Hidden file input */}
-            <input
-              type="file"
-              id="file-upload"
-              className="hidden"
-              onChange={handleFileChange}
-              accept=".pdf" // Changed to .pdf as per backend logic
-            />
-            {/* Clickable paperclip icon to trigger file input */}
-            <label htmlFor="file-upload" className="p-2 text-gray-600 hover:text-blue-500 cursor-pointer">
-              <FaPaperclip size={24} />
-            </label>
-
-            {/* Display selected file name and a clear button */}
-            {fileName && (
-              <div className="flex items-center text-sm bg-gray-100 p-2 rounded">
-                <span>{fileName}</span>
-                <button
-                  type="button"
-                  onClick={() => { setFile(null); setFileName(''); }}
-                  className="ml-2 text-red-500"
-                >
-                  <FaTrash size={16} />
-                </button>
-              </div>
-            )}
-
-            {/* Upload button, visible only if a file is selected */}
-            {fileName && (
-              <button
-                type="button"
-                onClick={handleFileUpload}
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-              >
-                Upload
-              </button>
-            )}
-            {/* Text input for chat/search query can go here too, or other message features */}
-          </div>
-        </div>
+                )}
+              </SearchContext.Consumer>
+            </div>
+          </section>
+        </main>
       </div>
     </SearchProvider>
   );

@@ -6,6 +6,7 @@ import ParameterPanel from "./components/ParameterPanel";
 import { SearchProvider, SearchContext } from "./context/SearchContext";
 import { FaPaperclip, FaTrash, FaSpinner } from 'react-icons/fa';
 import axios from 'axios';
+import parse from 'html-react-parser'; // Import html-react-parser
 
 function App() {
   const [file, setFile] = useState(null);
@@ -30,12 +31,15 @@ function App() {
     formData.append('file', file);
 
     try {
-      const response = await axios.post('http://34.93.181.110:8000/upload', formData, {
+      // Ensure the HOST is correctly defined, potentially from an environment variable or a config file
+      // For example: const HOST = process.env.REACT_APP_API_HOST || "http://34.93.181.110:8000";
+      const HOST = "http://34.93.181.110:8000"; // Replace with your actual backend host if different
+      const response = await axios.post(`${HOST}/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      console.log('File upload successful:', response.data); 
+      console.log('File upload successful:', response.data);
       alert('File uploaded successfully!');
       setFile(null);
       setFileName('');
@@ -57,9 +61,9 @@ function App() {
               {/* Left part: Logo */}
               <div className="flex-shrink-0">
                 <img
-                  src="/logo.png" 
+                  src="/logo.png" // Make sure this path is correct in your public folder
                   alt="Ayala Land Logo"
-                  className="h-10 w-auto" 
+                  className="h-10 w-auto"
                 />
               </div>
 
@@ -140,7 +144,7 @@ function App() {
           <section className="mb-8 p-6 bg-card-bg rounded-lg shadow-md">
             <div className="flex items-start">
               <img
-                src="/google-gemini-icon.png" 
+                src="/google-gemini-icon.png" // Make sure this path is correct
                 alt="AI Summary Icon"
                 className="w-8 h-8 mr-4 text-ayala-green"
               />
@@ -148,11 +152,11 @@ function App() {
                 <h2 className="text-lg font-semibold text-ayala-green-dark mb-1">Summary</h2>
                 <SearchContext.Consumer>
                   {({ searchResults }) => (
-                    <p className="text-text-secondary leading-relaxed">
-                      {searchResults && searchResults.summary
-                        ? searchResults.summary.summaryText
+                    <div className="text-text-secondary leading-relaxed prose prose-sm max-w-none prose-p:my-1 prose-a:text-ayala-green hover:prose-a:text-ayala-green-dark">
+                      {searchResults && searchResults.summary && searchResults.summary.summaryText
+                        ? parse(searchResults.summary.summaryText)
                         : "Your answer summary will appear here after a search."}
-                    </p>
+                    </div>
                   )}
                 </SearchContext.Consumer>
               </div>
@@ -178,3 +182,4 @@ function App() {
 }
 
 export default App;
+

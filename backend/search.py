@@ -9,9 +9,9 @@ LOCATION = os.getenv("LOCATION")
 AGENT_APPLICATION_ID = os.getenv("AGENT_APPLICATION_ID") # This is your Engine ID
 
 # Define the preamble for the summary
-SUMMARY_PREAMBLE = "Use a professional tone suitable for executive. Structure information in HTML encoded form with bullets and bold / italics and Use tables when appropriate to present information"
-
 SUMMARY_PREAMBLE = "Use a professional tone suitable for executive."
+SUMMARY_PREAMBLE = "Use a professional tone suitable for executive. Structure information in HTML encoded form with bullets and bold / italics and Use tables when appropriate to present information. Ensure all HTML is properly escaped and safe to render."
+
 
 
 @proto_to_dict

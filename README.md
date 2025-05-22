@@ -22,7 +22,7 @@ Google Cloud Vertex AI Agent Builder and search agent.
    source venv/bin/activate  # On Windows use `venv\Scripts\activate`
    ```
 
-2. **Install dependencies**:
+2. **Install dependencies in backend folder**:
 
    ```sh
    pip install -r requirements.txt
@@ -38,7 +38,8 @@ Google Cloud Vertex AI Agent Builder and search agent.
 
 5. **Run the backend**:
    ```sh
-   uvicorn main:app --reload
+   ## uvicorn main:app --reload
+   uvicorn main:app --host 0.0.0.0 --port 8000 --reload
    ```
 
 ### Frontend Setup

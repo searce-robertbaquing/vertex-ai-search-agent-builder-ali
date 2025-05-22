@@ -9,11 +9,12 @@ const ParameterPanel = () => {
   const { searchTermFromSearchComponent, setSearchResults } =
     useContext(SearchContext);
   const [isLoading, setIsLoading] = useState(false);
-  const [pageSize, setPageSize] = useState(10); 
+  // Updated default values
+  const [pageSize, setPageSize] = useState(5); 
   const [summaryResultCount, setSummaryResultCount] = useState(3); 
-  const [maxSnippetCount, setMaxSnippetCount] = useState(5);
-  const [maxExtractiveAnswerCount, setMaxExtractiveAnswerCount] = useState(3);
-  const [maxExtractiveSegmentCount, setMaxExtractiveSegmentCount] = useState(3);
+  const [maxSnippetCount, setMaxSnippetCount] = useState(1);
+  const [maxExtractiveAnswerCount, setMaxExtractiveAnswerCount] = useState(2);
+  const [maxExtractiveSegmentCount, setMaxExtractiveSegmentCount] = useState(1);
 
   const handleSearch = async () => {
     if (!searchTermFromSearchComponent || searchTermFromSearchComponent.trim() === "") {
@@ -56,7 +57,7 @@ const ParameterPanel = () => {
         value={pageSize}
         min="1"
         max="20" 
-        placeholder="e.g., 10"
+        placeholder="e.g., 5" // Updated placeholder
         onChange={(e) => setPageSize(Number(e.target.value))}
         disabled={isLoading}
       />
@@ -78,7 +79,7 @@ const ParameterPanel = () => {
         value={maxSnippetCount}
         min="0"
         max="10"
-        placeholder="e.g., 5"
+        placeholder="e.g., 1" // Updated placeholder
         onChange={(e) => setMaxSnippetCount(Number(e.target.value))}
         disabled={isLoading}
       />
@@ -89,7 +90,7 @@ const ParameterPanel = () => {
         value={maxExtractiveAnswerCount}
         min="0"
         max="5" 
-        placeholder="e.g., 3"
+        placeholder="e.g., 2" // Updated placeholder
         onChange={(e) => setMaxExtractiveAnswerCount(Number(e.target.value))}
         disabled={isLoading}
       />
@@ -100,7 +101,7 @@ const ParameterPanel = () => {
         value={maxExtractiveSegmentCount}
         min="0"
         max="5" 
-        placeholder="e.g., 3"
+        placeholder="e.g., 1" // Updated placeholder
         onChange={(e) => setMaxExtractiveSegmentCount(Number(e.target.value))}
         disabled={isLoading}
       />

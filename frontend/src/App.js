@@ -1,12 +1,11 @@
-import React, { useState } from "react";
-// No longer importing App.css as styles are in index.css or Tailwind
+import React, { useState, useContext } from "react";
 import SearchComponent from "./components/SearchComponent";
 import ResponseItem from "./components/SearchResponseList";
 import ParameterPanel from "./components/ParameterPanel";
 import { SearchProvider, SearchContext } from "./context/SearchContext";
 import { FaPaperclip, FaTrash, FaSpinner } from 'react-icons/fa';
 import axios from 'axios';
-import parse from 'html-react-parser'; // Import html-react-parser
+import parse from 'html-react-parser';
 
 function App() {
   const [file, setFile] = useState(null);
@@ -31,9 +30,7 @@ function App() {
     formData.append('file', file);
 
     try {
-      // Ensure the HOST is correctly defined, potentially from an environment variable or a config file
-      // For example: const HOST = process.env.REACT_APP_API_HOST || "http://34.93.181.110:8000";
-      const HOST = "http://34.93.181.110:8000"; // Replace with your actual backend host if different
+      const HOST = "http://34.93.181.110:8000"; 
       const response = await axios.post(`${HOST}/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -51,6 +48,26 @@ function App() {
     }
   };
 
+  const cleanSummaryText = (text) => {
+    if (!text) return "";
+    let cleanedText = text.trim(); 
+
+    const markdownFenceRegex = /^```(?:html)?\s*([\s\S]*?)\s*```$/;
+    const match = cleanedText.match(markdownFenceRegex);
+
+    if (match && match[1]) {
+      cleanedText = match[1].trim(); 
+    }
+    
+    if (cleanedText.startsWith("<html>") && cleanedText.endsWith("</html>")) {
+      const innerContent = cleanedText.substring("<html>".length, cleanedText.length - "</html>".length);
+      if (innerContent.trim().length > 0) {
+        cleanedText = innerContent;
+      }
+    }
+    return cleanedText.trim();
+  };
+
   return (
     <SearchProvider>
       <div className="min-h-screen bg-page-bg text-text-secondary">
@@ -61,7 +78,7 @@ function App() {
               {/* Left part: Logo */}
               <div className="flex-shrink-0">
                 <img
-                  src="/logo.png" // Make sure this path is correct in your public folder
+                  src="/logo.png"
                   alt="Ayala Land Logo"
                   className="h-10 w-auto"
                 />
@@ -76,7 +93,6 @@ function App() {
 
               {/* Right part: Spacer to balance the logo for title centering */}
               <div className="flex-shrink-0" style={{ width: 'calc(2.5rem + 1rem)' }}>
-                {/* This space can be used for other icons/menu in the future */}
               </div>
             </div>
           </div>
@@ -141,12 +157,13 @@ function App() {
             <SearchComponent />
           </section>
 
-          <section className="mb-8 p-6 bg-card-bg rounded-lg shadow-md">
+          {/* MODIFIED Summary Section Styling: page-bg (gray-100) background, blue border, full width */}
+          <section className="mb-8 p-6 bg-page-bg rounded-lg shadow-md w-full border-2 border-blue-500">
             <div className="flex items-start">
               <img
-                src="/google-gemini-icon.png" // Make sure this path is correct
+                src="/google-gemini-icon.png" 
                 alt="AI Summary Icon"
-                className="w-8 h-8 mr-4 text-ayala-green"
+                className="w-8 h-8 mr-4"
               />
               <div>
                 <h2 className="text-lg font-semibold text-ayala-green-dark mb-1">Summary</h2>
@@ -154,7 +171,7 @@ function App() {
                   {({ searchResults }) => (
                     <div className="text-text-secondary leading-relaxed prose prose-sm max-w-none prose-p:my-1 prose-a:text-ayala-green hover:prose-a:text-ayala-green-dark">
                       {searchResults && searchResults.summary && searchResults.summary.summaryText
-                        ? parse(searchResults.summary.summaryText)
+                        ? parse(cleanSummaryText(searchResults.summary.summaryText))
                         : "Your answer summary will appear here after a search."}
                     </div>
                   )}
@@ -182,4 +199,3 @@ function App() {
 }
 
 export default App;
-

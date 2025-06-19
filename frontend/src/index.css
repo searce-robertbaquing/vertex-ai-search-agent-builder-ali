@@ -49,3 +49,11 @@ code {
 .prose code::before, .prose code::after {
   content: none; /* Disables backticks around inline code in prose if desired */
 }
+
+.sidebar {
+  transition: width 0.3s ease-in-out;
+}
+
+.main-content {
+  transition: margin-left 0.3s ease-in-out;
+}

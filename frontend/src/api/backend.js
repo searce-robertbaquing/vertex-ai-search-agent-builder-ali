@@ -1,7 +1,8 @@
-// In frontend/src/api/backend.js
 import axios from "axios";
 
 // This logic automatically sets the correct API host.
+// In production (in the container), it's an empty string for relative paths.
+// In development, it uses the .env file.
 const HOST = process.env.NODE_ENV === 'production'
   ? ''
   : process.env.REACT_APP_API_HOST;
@@ -22,7 +23,7 @@ async function search(payload) {
     return response.data;
   } catch (error) {
     console.error("Error fetching search results:", error);
-    return null;
+    throw error;
   }
 }
 
@@ -30,8 +31,6 @@ async function search(payload) {
  * Uploads a file to the backend API.
  */
 async function uploadFile(formData) {
-  // The error is thrown here because HOST is not defined when this is called from App.js
-  // By moving the logic here, we ensure it uses the correct HOST.
   return axios.post(`${HOST}/upload`, formData, {
     headers: {
       'Content-Type': 'multipart/form-data',

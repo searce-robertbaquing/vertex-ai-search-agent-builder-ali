@@ -10,7 +10,7 @@ RUN cd frontend && npm install
 
 COPY frontend/ ./frontend/
 # Set the environment variable for the build command
-RUN cd frontend && REACT_APP_API_HOST='' npm run build
+RUN cd frontend && npm run build
 
 # --- Backend Setup ---
 COPY backend/ ./backend/

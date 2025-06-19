@@ -1,47 +1,44 @@
 import React, { useState, useContext } from "react";
 import { SearchContext } from "../context/SearchContext";
-import { FaSearch } from 'react-icons/fa';
+import { FaPaperPlane } from "react-icons/fa";
 
 const SearchComponent = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const { searchTermFromSearchComponent, setSearchTermFromSearchComponent, searchResults } = useContext(SearchContext);
-  const isLoading = searchResults?.isLoading; 
+  const [inputValue, setInputValue] = useState("");
+  const { handleSearch, isLoading } = useContext(SearchContext);
 
-  const onKeyPressHandler = (e) => {
-    if (e.key === "Enter" && searchTerm.trim() !== "") {
-      e.preventDefault();
-      // Ensure the context is updated if the user presses Enter quickly
-      // though handleChange should primarily handle this.
-      if (searchTerm.trim() !== searchTermFromSearchComponent) {
-         setSearchTermFromSearchComponent(searchTerm.trim());
-      }
-      // If you want Enter to also *trigger* the search (like clicking the button),
-      // you would need to call a search function here or pass a trigger function via context.
-      // For now, ParameterPanel.js handles the search trigger on button click.
+  const performSearch = () => {
+    if (inputValue.trim()) {
+      handleSearch(inputValue);
+      setInputValue(""); // Clear input after sending
     }
   };
 
-  const handleChange = (event) => {
-    const newSearchTerm = event.target.value;
-    setSearchTerm(newSearchTerm); // Update local state for the input field's value
-    setSearchTermFromSearchComponent(newSearchTerm); // Update context immediately
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter" && !isLoading) {
+      e.preventDefault(); // Prevent form submission
+      performSearch();
+    }
   };
 
   return (
-    <div className="relative flex items-center w-full">
-      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-        <FaSearch className="h-5 w-5 text-text-muted" />
-      </div>
+    <div className="relative flex items-center w-full bg-card-bg p-4 border-t border-gray-200 flex-shrink-0">
       <input
         type="text"
-        id="searchInput"
-        className="block w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg leading-5 bg-card-bg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-ayala-green-DEFAULT focus:border-ayala-green-DEFAULT text-lg shadow-sm"
-        placeholder="Enter your search query..."
-        value={searchTerm}
-        onKeyDown={onKeyPressHandler}
-        onChange={handleChange}
+        className="block w-full pl-4 pr-16 py-3 border border-gray-300 rounded-lg text-lg shadow-sm"
+        placeholder="Ask a question about your documents..."
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        onKeyDown={handleKeyPress}
         disabled={isLoading}
       />
+      <button
+        onClick={performSearch}
+        disabled={isLoading || !inputValue.trim()}
+        className="absolute inset-y-0 right-0 flex items-center justify-center px-6 text-gray-500 hover:text-ayala-green-dark disabled:opacity-50 disabled:hover:text-gray-500"
+        aria-label="Send"
+      >
+        <FaPaperPlane className="h-5 w-5" />
+      </button>
     </div>
   );
 };

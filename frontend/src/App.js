@@ -1,14 +1,17 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect, useRef } from "react";
 import SearchComponent from "./components/SearchComponent";
 import ResponseItem from "./components/SearchResponseList";
 import ParameterPanel from "./components/ParameterPanel";
 import { SearchProvider, SearchContext } from "./context/SearchContext";
-import { FaPaperclip, FaTrash, FaSpinner } from 'react-icons/fa';
-import { uploadFile } from './api/backend'; // Import the centralized upload function
+import { FaBars, FaPaperclip, FaTrash, FaSpinner, FaPlus } from "react-icons/fa";
+import { uploadFile } from "./api/backend";
+import LoadingModal from "./components/LoadingModal";
 
-function App() {
+// --- Helper Components defined outside the main App function for stability ---
+
+const Sidebar = () => {
   const [file, setFile] = useState(null);
-  const [fileName, setFileName] = useState('');
+  const [fileName, setFileName] = useState("");
   const [isUploading, setIsUploading] = useState(false);
 
   const handleFileChange = (event) => {
@@ -21,23 +24,18 @@ function App() {
 
   const handleFileUpload = async () => {
     if (!file) {
-      alert('Please select a file to upload first.');
+      alert("Please select a file to upload first.");
       return;
     }
     setIsUploading(true);
     const formData = new FormData();
-    formData.append('file', file);
-
+    formData.append("file", file);
     try {
-      // Use the centralized uploadFile function from the API client
-      const response = await uploadFile(formData);
-
-      console.log('File upload successful:', response.data);
-      alert('File uploaded successfully!');
+      await uploadFile(formData);
+      alert("File uploaded successfully!");
       setFile(null);
-      setFileName('');
+      setFileName("");
     } catch (error) {
-      console.error('Error uploading file:', error);
       const errorMessage = error.response ? error.response.data.detail : "Network Error";
       alert(`Error uploading file: ${errorMessage}`);
     } finally {
@@ -45,129 +43,136 @@ function App() {
     }
   };
 
+  const handleNewChat = () => {
+    window.open(window.location.href, "_blank");
+  };
+
   return (
-    <SearchProvider>
-      <div className="min-h-screen bg-page-bg text-text-secondary">
-        {/* Header */}
-        <header className="bg-header-bg shadow-md sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex-shrink-0">
-                <img
-                  src="/logo.png"
-                  alt="Ayala Land Logo"
-                  className="h-10 w-auto"
-                />
-              </div>
-              <div className="flex-grow text-center">
-                <h1 className="text-2xl font-semibold text-ayala-green-dark">
-                  AyalaLand Compass: Self Service AI Search
-                </h1>
-              </div>
-              <div className="flex-shrink-0" style={{ width: 'calc(2.5rem + 1rem)' }}>
-                {/* Spacer */}
-              </div>
+    <aside className="h-full bg-gray-800 text-white flex flex-col flex-shrink-0" style={{ width: '280px' }}>
+      <div className="p-4 border-b border-gray-700">
+        <button onClick={handleNewChat} className="w-full flex items-center justify-between p-2 text-lg font-semibold rounded-md hover:bg-gray-700">
+          <span>New Chat</span>
+          <FaPlus />
+        </button>
+      </div>
+      <div className="flex-grow p-4 overflow-y-auto">
+        <h3 className="text-sm font-semibold text-gray-400 mb-4">Knowledge Base</h3>
+        <div className="bg-gray-700 rounded-lg p-4 mb-6">
+          <label htmlFor="file-upload" className="w-full inline-flex items-center justify-center px-4 py-2 bg-ayala-green-dark text-white text-sm font-semibold rounded-md shadow-sm hover:bg-ayala-green cursor-pointer">
+            <FaPaperclip size={16} className="mr-2" />
+            <span>Upload Files</span>
+          </label>
+          <input id="file-upload" type="file" className="hidden" onChange={handleFileChange} accept=".pdf" disabled={isUploading} />
+          {fileName && (
+            <div className="mt-2 flex items-center text-sm bg-gray-600 p-2 rounded-md">
+              <span className="truncate" title={fileName}>{fileName}</span>
+              <button type="button" onClick={() => { if (!isUploading) { setFile(null); setFileName(''); } }} className="ml-auto text-red-400 hover:text-red-300 disabled:opacity-50" disabled={isUploading} aria-label="Remove file">
+                <FaTrash size={16} />
+              </button>
             </div>
+          )}
+          {file && (
+            <button type="button" onClick={handleFileUpload} disabled={isUploading} className="mt-4 w-full inline-flex items-center justify-center px-6 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 disabled:opacity-70">
+              {isUploading ? <><FaSpinner className="animate-spin mr-2" />Uploading...</> : "Upload Now"}
+            </button>
+          )}
+        </div>
+        
+        {/* Search Parameters Panel RESTORED */}
+        <ParameterPanel />
+      </div>
+      <div className="p-4 border-t border-gray-700">
+        <p className="text-xs text-gray-400">&copy; AyalaLand Compass</p>
+      </div>
+    </aside>
+  );
+};
+
+const BotResponse = ({ response }) => {
+  if (response.error) return <div className="text-red-500 p-4">{response.error}</div>;
+  const summaryText = response?.summary?.summary;
+  return (
+    <div className="bg-gray-100 p-6 rounded-lg">
+      {summaryText && (
+        <section className="mb-6 border-l-4 border-blue-500 pl-4">
+          <h2 className="text-lg font-semibold text-ayala-green-dark mb-1">Summary</h2>
+          <div className="text-text-secondary leading-relaxed prose prose-sm max-w-none">{summaryText}</div>
+        </section>
+      )}
+      <ResponseItem response={response} />
+    </div>
+  );
+};
+
+const ChatArea = () => {
+  const { chatHistory, isLoading } = useContext(SearchContext);
+  const messagesEndRef = useRef(null);
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatHistory, isLoading]);
+
+  return (
+    <div className="flex-grow p-6 space-y-6 overflow-y-auto">
+      {chatHistory.length === 0 && !isLoading && (
+        <div className="text-center text-gray-500 mt-20">
+          <div className="inline-block p-6 bg-card-bg rounded-lg shadow-md">
+            <h2 className="text-2xl font-semibold mb-2">Welcome!</h2>
+            <p>Upload documents and ask a question to get started.</p>
           </div>
-        </header>
-
-        {/* Main Content Area */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* File Upload Section */}
-          <section className="mb-8 p-6 bg-card-bg rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold text-ayala-green-dark mb-4">Upload Knowledge Base File</h2>
-            <div className="flex items-center space-x-3">
-              <label htmlFor="file-upload" className="inline-flex items-center px-4 py-2 bg-gray-100 text-text-secondary text-sm font-medium rounded-md border border-gray-300 cursor-pointer hover:bg-gray-200 transition-colors">
-                <FaPaperclip size={18} className="mr-2 -ml-1 text-text-muted" />
-                <span>{fileName ? "Change file" : "Select PDF file"}</span>
-              </label>
-              <input
-                id="file-upload"
-                type="file"
-                className="hidden"
-                onChange={handleFileChange}
-                accept=".pdf"
-                disabled={isUploading}
-              />
-              {fileName && (
-                <div className="flex items-center text-sm bg-gray-100 p-2 rounded-md flex-grow min-w-0">
-                  <span className="text-text-secondary truncate" title={fileName}>{fileName}</span>
-                  <button
-                    type="button"
-                    onClick={() => { if (!isUploading) { setFile(null); setFileName(''); } }}
-                    className="ml-2 text-red-500 hover:text-red-700 disabled:opacity-50"
-                    disabled={isUploading}
-                    aria-label="Remove file"
-                  >
-                    <FaTrash size={16} />
-                  </button>
-                </div>
-              )}
-              {file && (
-                <button
-                  type="button"
-                  onClick={handleFileUpload}
-                  disabled={isUploading}
-                  className="inline-flex items-center justify-center px-6 py-2 bg-ayala-green-dark text-white text-sm font-semibold rounded-md shadow-sm hover:bg-ayala-green focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ayala-green-DEFAULT disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {isUploading ? (
-                    <>
-                      <FaSpinner className="animate-spin -ml-1 mr-2 h-5 w-5" />
-                      Uploading...
-                    </>
-                  ) : (
-                    "Upload"
-                  )}
-                </button>
-              )}
+        </div>
+      )}
+      {chatHistory.map((item, index) => (
+        <div key={index}>
+          {item.type === 'user' && (
+            <div className="flex justify-end">
+              <p className="inline-block bg-blue-500 text-white p-3 rounded-lg max-w-xl text-left">{item.content}</p>
             </div>
-            {!fileName && !isUploading && <p className="text-xs text-text-muted mt-2">Select a PDF file to upload to the knowledge base.</p>}
-          </section>
+          )}
+          {item.type === 'bot' && <BotResponse response={item.content} />}
+        </div>
+      ))}
+      {isLoading && (
+        <div className="flex justify-center items-center p-4">
+          <FaSpinner className="animate-spin h-8 w-8 text-ayala-green-dark" />
+        </div>
+      )}
+      <div ref={messagesEndRef} />
+    </div>
+  );
+};
 
-          {/* Search Bar Section */}
-          <section className="mb-8">
-            <SearchComponent />
-          </section>
-
-          {/* Summary Section - RESTORED */}
-          <section className="mb-8 p-6 bg-page-bg rounded-lg shadow-md w-full border-2 border-blue-500">
-            <div className="flex items-start">
-              <img
-                src="/google-gemini-icon.png"
-                alt="AI Summary Icon"
-                className="w-8 h-8 mr-4"
-              />
-              <div>
-                <h2 className="text-lg font-semibold text-ayala-green-dark mb-1">Summary</h2>
-                <SearchContext.Consumer>
-                  {({ searchResults }) => {
-                    const summaryText = searchResults?.summary?.summary;
-                    return (
-                      <div className="text-text-secondary leading-relaxed prose prose-sm max-w-none prose-p:my-1">
-                        {summaryText ? summaryText : "Your answer summary will appear here after a search."}
-                      </div>
-                    );
-                  }}
-                </SearchContext.Consumer>
-              </div>
-            </div>
-          </section>
-
-          {/* Results Section */}
-          <section className="flex flex-col md:flex-row md:space-x-8">
-            <div className="w-full md:w-1/3 lg:w-1/4 mb-8 md:mb-0">
-              <ParameterPanel />
-            </div>
-            <div className="w-full md:w-2/3 lg:w-3/4">
-              <SearchContext.Consumer>
-                {({ searchResults }) => (
-                  <ResponseItem response={searchResults} />
-                )}
-              </SearchContext.Consumer>
-            </div>
-          </section>
+const MainLayout = () => {
+  const { isSidebarOpen, setIsSidebarOpen } = useContext(SearchContext);
+  return (
+    <div className="h-screen flex flex-col font-sans">
+      <header className="bg-header-bg shadow-md sticky top-0 z-20 flex-shrink-0">
+        <div className="flex items-center h-16 px-4">
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 mr-2 text-gray-600 hover:text-ayala-green-dark">
+            <FaBars size={20} />
+          </button>
+          <div className="flex items-center">
+            <img src="/logo.png" alt="Ayala Land Logo" className="h-10 w-auto" />
+            <h1 className="text-xl font-semibold text-ayala-green-dark ml-4">AI Document Assistant</h1>
+          </div>
+        </div>
+      </header>
+      <div className="flex flex-grow overflow-hidden">
+        <div className={`sidebar ${isSidebarOpen ? 'w-72' : 'w-0'} overflow-hidden h-full flex-shrink-0 transition-all duration-300 ease-in-out`}>
+          <Sidebar />
+        </div>
+        <main className="flex-grow flex flex-col transition-all duration-300 ease-in-out bg-page-bg">
+          <ChatArea />
+          <SearchComponent />
         </main>
       </div>
+    </div>
+  );
+};
+
+function App() {
+  return (
+    <SearchProvider>
+      <MainLayout />
     </SearchProvider>
   );
 }

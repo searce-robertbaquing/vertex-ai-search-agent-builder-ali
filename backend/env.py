@@ -2,8 +2,7 @@ import os
 from dotenv import load_dotenv
 from wrapper import log_data
 
-
-load_dotenv('.env')
+load_dotenv()
 
 PROJECT_ID = os.getenv("PROJECT_ID")
 LOCATION = os.getenv("LOCATION")

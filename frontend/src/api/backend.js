@@ -1,14 +1,14 @@
+// In frontend/src/api/backend.js
 import axios from "axios";
 
-// const HOST = "https://vertexai-search-demo-xiswadvybq-as.a.run.app" ;
-const HOST = "http://34.93.181.110:8000";
+// This logic automatically sets the correct API host.
+const HOST = process.env.NODE_ENV === 'production'
+  ? ''
+  : process.env.REACT_APP_API_HOST;
+
 /**
  * Sends a search request to the backend API.
- *
- * @param {string} query The search query to use.
- * @returns {Promise<object|null>} A promise that resolves with the search results, or null if an error occurred.
  */
-
 async function search(payload) {
   try {
     const response = await axios.post(`${HOST}/search`, {
@@ -26,4 +26,17 @@ async function search(payload) {
   }
 }
 
-export { search };
+/**
+ * Uploads a file to the backend API.
+ */
+async function uploadFile(formData) {
+  // The error is thrown here because HOST is not defined when this is called from App.js
+  // By moving the logic here, we ensure it uses the correct HOST.
+  return axios.post(`${HOST}/upload`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+}
+
+export { search, uploadFile };

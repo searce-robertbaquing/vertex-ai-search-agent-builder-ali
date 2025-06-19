@@ -1,4 +1,3 @@
-import parse from "html-react-parser";
 import { FaRegFilePdf, FaBookOpen, FaLightbulb, FaQuoteLeft, FaChartLine, FaInfoCircle } from 'react-icons/fa';
 
 const ResponseItem = (props) => {
@@ -83,9 +82,11 @@ function getSnippets(snippetItems) {
       </h4>
       <div className="space-y-3">
         {snippetItems.map((item, index) => (
-          <div key={`snippet-${index}`} className="text-sm text-text-secondary leading-relaxed prose prose-sm max-w-none prose-p:my-1 prose-a:text-ayala-green hover:prose-a:text-ayala-green-dark">
-            {parse(item.snippet)}
-          </div>
+          <div
+            key={`snippet-${index}`}
+            className="text-sm text-text-secondary leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: item.snippet }} // Use this if snippets contain safe HTML like <mark>
+          />
         ))}
       </div>
     </div>

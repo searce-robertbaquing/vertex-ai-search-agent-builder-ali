@@ -2,9 +2,9 @@ from google.cloud import storage
 import os
 import logging
 from wrapper import log_data
+from env import PROJECT_ID
 
-
-storage_client = storage.Client()
+storage_client = storage.Client(project=PROJECT_ID)
 
 
 @log_data

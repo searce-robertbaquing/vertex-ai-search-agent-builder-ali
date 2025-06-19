@@ -4,8 +4,7 @@ import ResponseItem from "./components/SearchResponseList";
 import ParameterPanel from "./components/ParameterPanel";
 import { SearchProvider, SearchContext } from "./context/SearchContext";
 import { FaPaperclip, FaTrash, FaSpinner } from 'react-icons/fa';
-import axios from 'axios';
-import parse from 'html-react-parser';
+import { uploadFile } from './api/backend'; // Import the centralized upload function
 
 function App() {
   const [file, setFile] = useState(null);
@@ -30,42 +29,20 @@ function App() {
     formData.append('file', file);
 
     try {
-      const HOST = "http://34.93.181.110:8000"; 
-      const response = await axios.post(`${HOST}/upload`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      // Use the centralized uploadFile function from the API client
+      const response = await uploadFile(formData);
+
       console.log('File upload successful:', response.data);
       alert('File uploaded successfully!');
       setFile(null);
       setFileName('');
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert(`Error uploading file: ${error.response ? error.response.data.detail : error.message}`);
+      const errorMessage = error.response ? error.response.data.detail : "Network Error";
+      alert(`Error uploading file: ${errorMessage}`);
     } finally {
       setIsUploading(false);
     }
-  };
-
-  const cleanSummaryText = (text) => {
-    if (!text) return "";
-    let cleanedText = text.trim(); 
-
-    const markdownFenceRegex = /^```(?:html)?\s*([\s\S]*?)\s*```$/;
-    const match = cleanedText.match(markdownFenceRegex);
-
-    if (match && match[1]) {
-      cleanedText = match[1].trim(); 
-    }
-    
-    if (cleanedText.startsWith("<html>") && cleanedText.endsWith("</html>")) {
-      const innerContent = cleanedText.substring("<html>".length, cleanedText.length - "</html>".length);
-      if (innerContent.trim().length > 0) {
-        cleanedText = innerContent;
-      }
-    }
-    return cleanedText.trim();
   };
 
   return (
@@ -75,7 +52,6 @@ function App() {
         <header className="bg-header-bg shadow-md sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
-              {/* Left part: Logo */}
               <div className="flex-shrink-0">
                 <img
                   src="/logo.png"
@@ -83,16 +59,13 @@ function App() {
                   className="h-10 w-auto"
                 />
               </div>
-
-              {/* Center part: Title */}
               <div className="flex-grow text-center">
                 <h1 className="text-2xl font-semibold text-ayala-green-dark">
                   AyalaLand Compass: Self Service AI Search
                 </h1>
               </div>
-
-              {/* Right part: Spacer to balance the logo for title centering */}
               <div className="flex-shrink-0" style={{ width: 'calc(2.5rem + 1rem)' }}>
+                {/* Spacer */}
               </div>
             </div>
           </div>
@@ -109,20 +82,19 @@ function App() {
                 <span>{fileName ? "Change file" : "Select PDF file"}</span>
               </label>
               <input
-                type="file"
                 id="file-upload"
+                type="file"
                 className="hidden"
                 onChange={handleFileChange}
                 accept=".pdf"
                 disabled={isUploading}
               />
-
               {fileName && (
                 <div className="flex items-center text-sm bg-gray-100 p-2 rounded-md flex-grow min-w-0">
                   <span className="text-text-secondary truncate" title={fileName}>{fileName}</span>
                   <button
                     type="button"
-                    onClick={() => { if (!isUploading) {setFile(null); setFileName('');} }}
+                    onClick={() => { if (!isUploading) { setFile(null); setFileName(''); } }}
                     className="ml-2 text-red-500 hover:text-red-700 disabled:opacity-50"
                     disabled={isUploading}
                     aria-label="Remove file"
@@ -131,7 +103,6 @@ function App() {
                   </button>
                 </div>
               )}
-
               {file && (
                 <button
                   type="button"
@@ -150,36 +121,39 @@ function App() {
                 </button>
               )}
             </div>
-            { !fileName && !isUploading && <p className="text-xs text-text-muted mt-2">Select a PDF file to upload to the knowledge base.</p>}
+            {!fileName && !isUploading && <p className="text-xs text-text-muted mt-2">Select a PDF file to upload to the knowledge base.</p>}
           </section>
 
+          {/* Search Bar Section */}
           <section className="mb-8">
             <SearchComponent />
           </section>
 
-          {/* MODIFIED Summary Section Styling: page-bg (gray-100) background, blue border, full width */}
+          {/* Summary Section - RESTORED */}
           <section className="mb-8 p-6 bg-page-bg rounded-lg shadow-md w-full border-2 border-blue-500">
             <div className="flex items-start">
               <img
-                src="/google-gemini-icon.png" 
+                src="/google-gemini-icon.png"
                 alt="AI Summary Icon"
                 className="w-8 h-8 mr-4"
               />
               <div>
                 <h2 className="text-lg font-semibold text-ayala-green-dark mb-1">Summary</h2>
                 <SearchContext.Consumer>
-                  {({ searchResults }) => (
-                    <div className="text-text-secondary leading-relaxed prose prose-sm max-w-none prose-p:my-1 prose-a:text-ayala-green hover:prose-a:text-ayala-green-dark">
-                      {searchResults && searchResults.summary && searchResults.summary.summaryText
-                        ? parse(cleanSummaryText(searchResults.summary.summaryText))
-                        : "Your answer summary will appear here after a search."}
-                    </div>
-                  )}
+                  {({ searchResults }) => {
+                    const summaryText = searchResults?.summary?.summary;
+                    return (
+                      <div className="text-text-secondary leading-relaxed prose prose-sm max-w-none prose-p:my-1">
+                        {summaryText ? summaryText : "Your answer summary will appear here after a search."}
+                      </div>
+                    );
+                  }}
                 </SearchContext.Consumer>
               </div>
             </div>
           </section>
 
+          {/* Results Section */}
           <section className="flex flex-col md:flex-row md:space-x-8">
             <div className="w-full md:w-1/3 lg:w-1/4 mb-8 md:mb-0">
               <ParameterPanel />

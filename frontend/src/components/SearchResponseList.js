@@ -1,143 +1,133 @@
-import { FaRegFilePdf, FaBookOpen, FaLightbulb, FaQuoteLeft, FaChartLine, FaInfoCircle } from 'react-icons/fa';
+import React, { useState } from "react";
+import DOMPurify from 'dompurify';
+import { FaChevronDown, FaChevronUp, FaRegFilePdf, FaQuoteLeft, FaListUl, FaSearch, FaBookOpen } from 'react-icons/fa';
 
-const ResponseItem = (props) => {
-  const isLoading = props.response?.isLoading;
+const CollapsibleSection = ({ title, icon, children, defaultOpen = false }) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
 
-  if (isLoading) {
-    // Handled by the modal in ParameterPanel, but could have a placeholder here too
-    return null; 
-  }
-  
-  if (!props.response || !props.response.results) {
-    return (
-      <div className="bg-card-bg rounded-lg shadow-md p-8 text-center text-text-muted">
-        <FaInfoCircle className="mx-auto text-4xl text-gray-400 mb-4" />
-        <p>Perform a search to see results here.</p>
-        <p className="text-xs mt-1">Ensure you have entered a query in the search bar above and clicked "Search" in the parameters panel.</p>
-      </div>
-    );
-  }
-
-  if (props.response.results.length === 0) {
-    return (
-      <div className="bg-card-bg rounded-lg shadow-md p-8 text-center text-text-muted">
-        <FaInfoCircle className="mx-auto text-4xl text-gray-400 mb-4" />
-        <p>No results found for your query.</p>
-        <p className="text-xs mt-1">Try refining your search terms or adjusting the parameters.</p>
-      </div>
-    );
+  if (!React.Children.count(children) || (Array.isArray(children) && children.every(child => !child))) {
+    return null;
   }
 
   return (
-    <div className="space-y-6">
-      {props.response.results.map((item, index) => (
-        <div key={item.document?.id || `result-${index}`} className="bg-card-bg rounded-lg shadow-md p-6">
-          {getFileName(item.document?.derivedStructData?.title)}
-          {getReferences(props.response.summary?.summaryWithMetadata?.references)}
-          {getSnippets(item.document?.derivedStructData?.snippets)}
-          {getExtractiveAnswer(item.document?.derivedStructData?.extractive_answers)}
-          {getExtractiveSegments(item.document?.derivedStructData?.extractive_segments)}
+    <div className="border-t border-gray-200 pt-4 mt-4">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex justify-between items-center text-left text-sm md:text-base font-semibold text-gray-600 hover:text-black"
+      >
+        <div className="flex items-center">
+          {icon}
+          <span className="ml-3 tracking-wide">{title}</span>
         </div>
-      ))}
+        {isOpen ? <FaChevronUp /> : <FaChevronDown />}
+      </button>
+      {isOpen && (
+        <div className="mt-4 pl-2 border-l-2 border-gray-200 ml-3 text-sm md:text-base">
+          {children}
+        </div>
+      )}
     </div>
   );
 };
 
-function getFileName(docTitle) {
-  if (!docTitle) return null;
-  const title = docTitle.toString().includes("docs/")
-    ? docTitle.toString().split("/")[1]
-    : docTitle.toString();
-  return (
-    <h3 className="text-xl font-semibold text-ayala-green-dark mb-3 flex items-center">
-      <FaRegFilePdf className="mr-2 opacity-80 flex-shrink-0"/> {title}
-    </h3>
-  );
-}
+const SearchResponseItem = ({ result }) => {
+  const doc = result.document;
+  
+  const getTitle = () => {
+    const derivedTitle = doc.derivedStructData?.title;
+    if (derivedTitle) return derivedTitle;
+    
+    const originalTitle = doc.structData?.title;
+    if (originalTitle) {
+      return originalTitle.includes("/") ? originalTitle.split("/").pop() : originalTitle;
+    }
+    
+    return doc.id;
+  };
 
-function getReferences(referenceItems) {
-  if (!referenceItems || referenceItems.length === 0) return null;
-  return (
-    <div className="mt-5 pt-4 border-t border-gray-200">
-      <h4 className="text-xs font-semibold text-text-muted mb-2 uppercase tracking-wider flex items-center">
-        <FaBookOpen className="mr-2 opacity-75"/> References
-      </h4>
-      <div className="space-y-2">
-        {referenceItems.map((item, index) => (
-          <div key={`ref-${index}`} className="text-xs text-text-secondary bg-page-bg p-2 rounded-md">
-            <span className="font-semibold text-ayala-green">Page {item.chunkContents?.[0]?.pageIdentifier || 'N/A'}:</span> {item.chunkContents?.[0]?.content || 'No content available.'}
+  const documentTitle = getTitle();
+
+  const getSnippets = (item) => {
+    const snippets = item?.derivedStructData?.snippets || [];
+    if (snippets.length === 0) return null;
+    
+    const cleanSnippet = DOMPurify.sanitize(snippets[0].snippet);
+
+    return (
+      <div 
+        className="space-y-3 prose prose-sm md:prose-base max-w-none" 
+        dangerouslySetInnerHTML={{ __html: cleanSnippet }} 
+      />
+    );
+  };
+  
+  const getExtractiveAnswers = (item) => {
+    const answers = item?.derivedStructData?.extractive_answers || [];
+    if (answers.length === 0) return null;
+    return (
+      <div className="space-y-4">
+        {answers.map((answer, index) => (
+          <div key={`extractive_answer-${index}`} className="p-3 bg-gray-50 rounded-lg">
+            <p className="text-xs font-semibold text-gray-500">Page {answer.pageNumber}</p>
+            <p className="text-text-primary mt-1">{answer.content}</p>
           </div>
         ))}
       </div>
-    </div>
-  );
-}
+    );
+  };
 
-function getSnippets(snippetItems) {
-  if (!snippetItems || snippetItems.length === 0) return null;
-  return (
-    <div className="mt-5 pt-4 border-t border-gray-200">
-      <h4 className="text-xs font-semibold text-text-muted mb-2 uppercase tracking-wider flex items-center">
-         <FaLightbulb className="mr-2 opacity-75"/> Snippets
-      </h4>
-      <div className="space-y-3">
-        {snippetItems.map((item, index) => (
-          <div
-            key={`snippet-${index}`}
-            className="text-sm text-text-secondary leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: item.snippet }} // Use this if snippets contain safe HTML like <mark>
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function getExtractiveAnswer(extractiveAnswerItems) {
-  if (!extractiveAnswerItems || extractiveAnswerItems.length === 0) return null;
-  return (
-    <div className="mt-5 pt-4 border-t border-gray-200">
-      <h4 className="text-xs font-semibold text-text-muted mb-2 uppercase tracking-wider flex items-center">
-        <FaQuoteLeft className="mr-2 opacity-75"/> Extractive Answers
-      </h4>
-      <div className="space-y-3">
-        {extractiveAnswerItems.map((item, index) => (
-          <div key={`answer-${index}`} className="bg-ayala-green-light/10 p-4 rounded-lg border-l-4 border-ayala-green-light">
-            <p className="text-xs text-ayala-green-dark font-medium mb-1">Page {item.pageNumber}</p>
-            <p className="text-sm text-text-primary">{item.content}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function getExtractiveSegments(extractiveSegmentItems) {
-  if (!extractiveSegmentItems || extractiveSegmentItems.length === 0) return null;
-  return (
-    <div className="mt-5 pt-4 border-t border-gray-200">
-      <h4 className="text-xs font-semibold text-text-muted mb-2 uppercase tracking-wider flex items-center">
-        <FaChartLine className="mr-2 opacity-75"/> Extractive Segments
-      </h4>
-      <div className="space-y-3">
-        {extractiveSegmentItems.map((item, index) => (
-          <div key={`segment-${index}`} className="bg-gray-50 p-4 rounded-lg">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-xs font-medium text-ayala-green-dark">
-                Page {item.pageNumber}
-              </span>
-              {item.relevanceScore && (
-                <span className="text-xs font-medium text-ayala-green bg-ayala-green-light/20 px-2 py-0.5 rounded-full">
-                  Relevance: {item.relevanceScore.toFixed(2)}
-                </span>
-              )}
+  const getExtractiveSegments = (item) => {
+    const segments = item?.derivedStructData?.extractive_segments || [];
+    if (segments.length === 0) return null;
+    return (
+      <div className="space-y-4">
+        {segments.map((segment, index) => (
+            <div key={`extractive_segment-${index}`} className="p-3 bg-gray-50 rounded-lg">
+                <p className="text-xs font-semibold text-gray-500 flex justify-between">
+                    <span>Page {segment.pageNumber}</span>
+                    {segment.relevanceScore && <span className="font-normal text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">Relevance: {segment.relevanceScore.toFixed(2)}</span>}
+                </p>
+                <p className="text-text-primary mt-1">{segment.content}</p>
             </div>
-            <p className="text-sm text-text-secondary">{item.content}</p>
-          </div>
         ))}
       </div>
+    );
+  };
+
+  return (
+    <div className="p-4 md:p-6 bg-card-bg rounded-lg shadow-md">
+      <h3 className="text-base md:text-lg font-semibold text-gray-800 mb-4 flex items-center">
+        <FaRegFilePdf className="mr-3 text-gray-500" />
+        {documentTitle}
+      </h3>
+      
+      <CollapsibleSection title="Snippets" icon={<FaSearch />}>
+        {getSnippets(doc)}
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Extractive Answers" icon={<FaQuoteLeft />}>
+        {getExtractiveAnswers(doc)}
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Extractive Segments" icon={<FaListUl />}>
+        {getExtractiveSegments(doc)}
+      </CollapsibleSection>
     </div>
   );
-}
+};
+
+const ResponseItem = ({ response }) => {
+  if (!response || !response.results || response.results.length === 0) {
+    return null; 
+  }
+
+  return (
+    <div className="space-y-6">
+      {response.results.map((result, index) => (
+        <SearchResponseItem key={result.document.id || index} result={result} />
+      ))}
+    </div>
+  );
+};
 
 export default ResponseItem;

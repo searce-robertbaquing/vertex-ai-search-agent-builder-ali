@@ -1,58 +1,54 @@
 from typing import List
 from google.api_core.client_options import ClientOptions
 from google.cloud import discoveryengine_v1 as discoveryengine
-from wrapper import proto_to_dict, log_data
+from wrapper import proto_to_dict
 import os
-import json
-import logging
-
-logger = logging.getLogger(__name__)
 
 PROJECT_ID = os.getenv("PROJECT_ID")
 LOCATION = os.getenv("LOCATION")
-AGENT_APPLICATION_ID = os.getenv("AGENT_APPLICATION_ID") # This is your Engine ID
+AGENT_APPLICATION_ID = os.getenv("AGENT_APPLICATION_ID")
 
-# A more robust prompt to ensure the summary model returns valid JSON
-SUMMARY_PREAMBLE = """
-Provide a concise summary of the following documents.
-Your response MUST be a single, valid JSON object with the following schema:
-{
-  "summary": "Your summary of the documents here."
-}
-Do not include any text or formatting outside of this JSON object.
-"""
+# --- REFINED PREAMBLE ---
+# Architect's Note: This is the final, refined preamble. It gives the AI a persona ("expert analyst")
+# and asks it to "synthesize" information rather than just "present" it, encouraging a more generative response.
+SUMMARY_PREAMBLE = "You are an expert executive assistant. Your task is to synthesize the provided documents to give a clear and concise answer to the user's question. Employ the BLUF (Bottom Line Up Front) method by starting with a direct summary of the most critical information. Then, elaborate on the key points using professional language and structured HTML formatting (headings, bullets, tables)."
 
-@log_data
 @proto_to_dict
 def search_discovery_engine(
-    location: str,
     search_query: str,
-    summary_result_count: int,
-    page_size: int,
-    max_snippet_count: int,
-    include_citations: bool,
-    use_semantic_chunks: bool,
-    max_extractive_answer_count: int,
-    max_extractive_segment_count: int,
-) -> List[discoveryengine.SearchResponse.SearchResult]:
+    location: str = "global",
+    summary_result_count: int = 5,
+    page_size: int = 5,
+    max_snippet_count: int = 1,
+    include_citations: bool = True,
+    use_semantic_chunks: bool = True,
+    max_extractive_answer_count: int = 2,
+    max_extractive_segment_count: int = 1,
+) -> List[discoveryengine.SearchResponse]:
+    """
+    Searches the Discovery Engine for documents matching the provided query.
+    """
+
     client_options = (
-        ClientOptions(api_endpoint=f"{location}-discoveryengine.googleapis.com")
-        if location != "global"
+        ClientOptions(api_endpoint=f"{LOCATION}-discoveryengine.googleapis.com")
+        if LOCATION != "global"
         else None
     )
-
     client = discoveryengine.SearchServiceClient(client_options=client_options)
 
-    # This is the corrected serving_config using the DATA_STORE_ID
+    if not PROJECT_ID:
+        raise ValueError("PROJECT_ID environment variable is not set.")
+    if not LOCATION:
+        raise ValueError("LOCATION environment variable is not set.")
+    if not AGENT_APPLICATION_ID:
+        raise ValueError("AGENT_APPLICATION_ID (Engine ID) environment variable is not set.")
+
     serving_config = f"projects/{PROJECT_ID}/locations/{LOCATION}/collections/default_collection/engines/{AGENT_APPLICATION_ID}/servingConfigs/default_config"
-
-
-    logger.info(f"Using serving configuration: {serving_config}")
 
     content_search_spec = discoveryengine.SearchRequest.ContentSearchSpec(
         snippet_spec=discoveryengine.SearchRequest.ContentSearchSpec.SnippetSpec(
             return_snippet=True,
-            max_snippet_count=max_snippet_count
+            max_snippet_count=max_snippet_count,
         ),
         summary_spec=discoveryengine.SearchRequest.ContentSearchSpec.SummarySpec(
             summary_result_count=summary_result_count,
@@ -61,10 +57,14 @@ def search_discovery_engine(
                 preamble=SUMMARY_PREAMBLE
             ),
             use_semantic_chunks=use_semantic_chunks,
+            model_spec=discoveryengine.SearchRequest.ContentSearchSpec.SummarySpec.ModelSpec(
+                version="stable",
+            ),
         ),
         extractive_content_spec=discoveryengine.SearchRequest.ContentSearchSpec.ExtractiveContentSpec(
             max_extractive_answer_count=max_extractive_answer_count,
             max_extractive_segment_count=max_extractive_segment_count,
+            return_extractive_segment_score=True,
         ),
     )
 
@@ -80,20 +80,5 @@ def search_discovery_engine(
             mode=discoveryengine.SearchRequest.SpellCorrectionSpec.Mode.AUTO
         ),
     )
-    
-    response = client.search(request)
 
-    results = {}
-    results["results"] = response.results
-    if response.summary and response.summary.summary_text:
-        try:
-            # Parse the JSON string from the model's summary response
-            summary_data = json.loads(response.summary.summary_text)
-            results["summary"] = summary_data
-        except json.JSONDecodeError:
-            # Fallback if the model returns a non-JSON string
-            results["summary"] = {"summary": "The model returned a summary in an unexpected format."}
-    else:
-        results["summary"] = None
-
-    return results
+    return client.search(request)

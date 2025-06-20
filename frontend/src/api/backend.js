@@ -1,8 +1,5 @@
 import axios from "axios";
 
-// This logic automatically sets the correct API host.
-// In production (in the container), it's an empty string for relative paths.
-// In development, it uses the .env file.
 const HOST = process.env.NODE_ENV === 'production'
   ? ''
   : process.env.REACT_APP_API_HOST;
@@ -28,7 +25,7 @@ async function search(payload) {
 }
 
 /**
- * Uploads a file to the backend API.
+ * Uploads one or more files to the backend API.
  */
 async function uploadFile(formData) {
   return axios.post(`${HOST}/upload`, formData, {
@@ -38,4 +35,18 @@ async function uploadFile(formData) {
   });
 }
 
-export { search, uploadFile };
+/**
+ * Fetches the list of existing documents from the backend.
+ */
+async function listDocuments() {
+    try {
+        const response = await axios.get(`${HOST}/documents`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching document list:", error);
+        throw error;
+    }
+}
+
+// Architect's Note: getIndexingStatus has been removed from the exports.
+export { search, uploadFile, listDocuments };

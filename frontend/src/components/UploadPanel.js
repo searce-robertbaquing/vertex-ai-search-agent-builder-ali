@@ -1,7 +1,6 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { FaPaperclip, FaTrash, FaSpinner } from 'react-icons/fa';
 import { uploadFile } from '../api/backend';
-import { SearchContext } from '../context/SearchContext';
 
 const UploadPanel = () => {
     const [files, setFiles] = useState([]);
@@ -30,7 +29,7 @@ const UploadPanel = () => {
         try {
             await uploadFile(formData);
             // Architect's Note: Updated alert message as requested.
-            alert("Upload complete. The documents will be processed and will appear in the 'Existing Documents' list when ready for querying.");
+            alert("Upload complete. The documents will be processed and will be ready for querying in a few minutes.");
             setFiles([]);
         } catch (error) {
             const errorMessage = error.response ? error.response.data.detail : "Network Error";

@@ -13,9 +13,9 @@ const cleanSummaryHtml = (htmlString) => {
 
 const BotResponse = ({ response, summaryRef }) => {
     if (response.error) return <div className="text-red-500 p-4">{response.error}</div>;
-    const rawSummaryHtml = response?.summary?.summaryText;
+
+    const rawSummaryHtml = response.summary?.summaryText;
     const cleanedHtml = cleanSummaryHtml(rawSummaryHtml);
-    if (!response.results || response.results.length === 0) return null;
 
     return (
         <div className="space-y-6">
@@ -92,6 +92,7 @@ const MainLayout = () => {
         <div className="h-screen flex flex-col font-sans">
             <header className="bg-header-bg shadow-md sticky top-0 z-30 flex-shrink-0">
                 <div className="flex items-center h-16 px-4">
+                    {/* Architect's Note: This button correctly toggles the isSidebarOpen state */}
                     <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 mr-2 text-gray-600 hover:text-ayala-green-dark">
                         <FaBars size={20} />
                     </button>
@@ -99,16 +100,19 @@ const MainLayout = () => {
                         <img src="/logo.png" alt="Ayala Land Logo" className="h-10 w-auto" />
                         <h1 className="text-lg md:text-xl font-semibold text-ayala-green-dark ml-4">AyalaLand Compass: Self Service AI Search</h1>
                     </div>
+                    {/* Indexing notification component can be placed here if you keep the feature */}
                 </div>
             </header>
             <div className="flex flex-grow overflow-hidden relative">
+                {/* Mobile overlay, appears when sidebar is open on small screens */}
                 {isSidebarOpen && (
-                    <div
-                        onClick={() => setIsSidebarOpen(false)}
+                    <div 
+                        onClick={() => setIsSidebarOpen(false)} 
                         className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
                         aria-hidden="true"
                     ></div>
                 )}
+                {/* Architect's Note: These responsive classes control the slide-in/out behavior */}
                 <div className={`fixed top-0 left-0 h-full z-50 transition-transform transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 md:h-auto md:z-auto`}>
                     <Sidebar />
                 </div>

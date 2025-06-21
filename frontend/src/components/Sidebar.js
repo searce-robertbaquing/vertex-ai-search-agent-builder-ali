@@ -8,8 +8,7 @@ const Sidebar = () => {
     const [activeView, setActiveView] = useState('parameters');
 
     const handleNewChat = () => {
-        // A simple page refresh will clear the session now
-        window.location.reload();
+        window.open(window.location.href, "_blank");
     };
     
     const MenuButton = ({ view, label, icon, currentView, setView }) => (

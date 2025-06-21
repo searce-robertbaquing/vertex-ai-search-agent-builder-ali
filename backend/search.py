@@ -9,16 +9,14 @@ LOCATION = os.getenv("LOCATION")
 AGENT_APPLICATION_ID = os.getenv("AGENT_APPLICATION_ID")
 
 # --- REFINED PREAMBLE ---
-# Architect's Note: This is the final, refined preamble. It gives the AI a persona ("expert analyst")
-# and asks it to "synthesize" information rather than just "present" it, encouraging a more generative response.
-SUMMARY_PREAMBLE = "You are an expert executive assistant. Your task is to synthesize the provided documents to give a clear and concise answer to the user's question. Employ the BLUF (Bottom Line Up Front) method by starting with a direct summary of the most critical information. Then, elaborate on the key points using professional language and structured HTML formatting (headings, bullets, tables)."
+SUMMARY_PREAMBLE = "You are an expert executive assistant. Your task is to provide a comprehensive and clear answer to the user's question by synthesizing the key information from the provided documents. Your entire response MUST be formatted in clean, well-structured HTML. Use headings (<h2>, <h3>), paragraphs (<p>), and lists (<ul>, <li>) for clarity. When presenting tabular or numerical data, use an HTML <table>. When providing citations, you MUST enclose the citation number in HTML superscript tags, like this: <sup>[1]</sup>. Do NOT include a plain text version of the data; the HTML format is the only required output."
 
 @proto_to_dict
 def search_discovery_engine(
     search_query: str,
     location: str = "global",
-    summary_result_count: int = 5,
-    page_size: int = 5,
+    summary_result_count: int = 3,
+    page_size: int = 3,
     max_snippet_count: int = 1,
     include_citations: bool = True,
     use_semantic_chunks: bool = True,
